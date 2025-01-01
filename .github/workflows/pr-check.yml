@@ -5,6 +5,7 @@ on:
     types:
       - opened
       - synchronize
+  workflow_dispatch:
 
 # 任务
 jobs:
