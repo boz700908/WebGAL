@@ -35,6 +35,16 @@ export const whenChecker = (whenValue: string | undefined): boolean => {
   return !!strIf(valExp);
 };
 
+function settleFastPreviewPendingStateBeforeNext() {
+  if (!WebGAL.gameplay.isFastPreview) {
+    return;
+  }
+
+  // fast preview 的 -next 链不会在语句之间 commit，需要先结算当前句会影响后续演算的 pending 终态。
+  WebGAL.gameplay.performController.discardUncommittedNonHoldPerforms(true);
+  WebGAL.gameplay.performController.clearNonHoldPerformsFromStageState();
+}
+
 /**
  * 语句执行器
  * 执行语句，同步场景状态，并根据情况立即执行下一句或者加入backlog
@@ -148,6 +158,7 @@ export const scriptExecutor = (depth = 0) => {
   if (isNext && !hasPendingBlockingStateCalculationPerform && !WebGAL.sceneManager.lockSceneWrite) {
     WebGAL.sceneManager.sceneData.currentSentenceId++;
     saveBacklogIfNeeded();
+    settleFastPreviewPendingStateBeforeNext();
     scriptExecutor(depth + 1);
     return;
   }
