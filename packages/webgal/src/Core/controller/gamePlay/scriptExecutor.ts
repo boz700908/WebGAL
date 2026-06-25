@@ -157,8 +157,8 @@ export const scriptExecutor = (depth = 0) => {
   // 执行“下一句”。只有需要外部输入才能确定后续状态的演出，才会阻塞状态演算。
   if (isNext && !hasPendingBlockingStateCalculationPerform && !WebGAL.sceneManager.lockSceneWrite) {
     WebGAL.sceneManager.sceneData.currentSentenceId++;
-    saveBacklogIfNeeded();
     settleFastPreviewPendingStateBeforeNext();
+    saveBacklogIfNeeded();
     scriptExecutor(depth + 1);
     return;
   }
