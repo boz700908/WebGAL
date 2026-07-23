@@ -223,6 +223,29 @@ test("say statement applies asset setter to vocal named argument", async () => {
   });
 });
 
+test("audio commands accept opus resources", async () => {
+  const parser = new SceneParser((assetList) => {
+  }, (fileName, assetType) => {
+    return `./game/${assetType === fileType.bgm ? 'bgm' : 'vocal'}/${fileName}`;
+  }, ADD_NEXT_ARG_LIST, SCRIPT_CONFIG);
+
+  const result = parser.parse(`say:123 -a.opus;
+bgm:track.opus;
+playEffect:se.opus;
+unlockBgm:extra.opus;`, 'test', 'test');
+
+  expect(result.sentenceList[0].args).toContainEqual({ key: 'vocal', value: './game/vocal/a.opus' });
+  expect(result.sentenceList[0].sentenceAssets).toContainEqual({
+    name: './game/vocal/a.opus',
+    url: './game/vocal/a.opus',
+    type: fileType.vocal,
+    lineNumber: 0,
+  });
+  expect(result.sentenceList[1].content).toBe('./game/bgm/track.opus');
+  expect(result.sentenceList[2].content).toBe('./game/vocal/se.opus');
+  expect(result.sentenceList[3].content).toBe('./game/bgm/extra.opus');
+});
+
 test("scene assets are deduplicated by type and url", async () => {
   let prefetchedAssets: IAsset[] = [];
   const parser = new SceneParser((assetList) => {
