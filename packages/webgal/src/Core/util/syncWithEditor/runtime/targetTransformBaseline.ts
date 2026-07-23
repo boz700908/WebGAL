@@ -202,7 +202,10 @@ function querySnapshot(snapshot: TargetTransformBaselineSnapshot, target: string
   };
 }
 
-function getSnapshotTransformOverride(snapshot: TargetTransformBaselineSnapshot, target: string): ITransform | undefined {
+function getSnapshotTransformOverride(
+  snapshot: TargetTransformBaselineSnapshot,
+  target: string,
+): ITransform | undefined {
   if (!snapshot.knownTargets.has(target)) {
     return undefined;
   }

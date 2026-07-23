@@ -74,9 +74,7 @@ export const scriptExecutor = (depth = 0, options: ScriptExecutionOptions = {}) 
     sceneName: WebGAL.sceneManager.sceneData.currentScene.sceneName,
     sentenceId,
   });
-  const currentScript: ISentence = cloneDeep(
-    WebGAL.sceneManager.sceneData.currentScene.sentenceList[sentenceId],
-  );
+  const currentScript: ISentence = cloneDeep(WebGAL.sceneManager.sceneData.currentScene.sentenceList[sentenceId]);
 
   const interpolationOneItem = (content: string): string => {
     let retContent = content;
