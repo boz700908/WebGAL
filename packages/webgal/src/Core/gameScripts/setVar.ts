@@ -77,6 +77,8 @@ export const setVar = (sentence: ISentence): IPerform => {
 
 type BaseVal = string | number | boolean | undefined;
 
+const hasOwn = (obj: object, key: string) => Object.prototype.hasOwnProperty.call(obj, key);
+
 export function resolveSetVarValue(valExp: string): string | boolean | number {
   if (/^\s*[a-zA-Z_$][\w$]*\s*\(.*\)\s*$/.test(valExp)) {
     return EvaluateExpression(valExp);
@@ -140,11 +142,12 @@ export function getValueFromState(key: string) {
   const userData = webgalStore.getState().userData;
   const _Merge = { stage, userData }; // 不要直接合并到一起，防止可能的键冲突
   // 查找链：当前帧局部变量 -> 舞台变量 -> 全局变量
-  if (locals.hasOwnProperty(key)) {
+  // 变量名由脚本作者决定，不能用实例上的 hasOwnProperty，否则 hasOwnProperty 这种名字会把方法本身覆盖掉
+  if (hasOwn(locals, key)) {
     ret = locals[key];
-  } else if (stage.GameVar.hasOwnProperty(key)) {
+  } else if (hasOwn(stage.GameVar, key)) {
     ret = stage.GameVar[key];
-  } else if (userData.globalGameVar.hasOwnProperty(key)) {
+  } else if (hasOwn(userData.globalGameVar, key)) {
     ret = userData.globalGameVar[key];
   } else if (key.startsWith('$')) {
     const propertyKey = key.replace('$', '');

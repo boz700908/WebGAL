@@ -40,6 +40,8 @@ export const callScene = (sceneUrl: string, sceneName: string, locals: IGameVar 
       shouldAutoNext = !isFastPreviewSceneWrite;
     })
     .catch((e) => {
+      // 场景没写进来，之前压入的帧要弹回去，否则调用方会带着被调用方的局部变量继续跑
+      WebGAL.sceneManager.popFrame();
       logger.error('场景调用错误', e);
     })
     .finally(() => {
