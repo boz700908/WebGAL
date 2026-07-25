@@ -42,12 +42,18 @@ export const setGameVarFromExpression = ({
   }
   setGameVar({ key: normalizedKey, value: resolveSetVarValue(value) });
   if (isGlobal) {
-    logger.debug('设置全局变量：', { key: normalizedKey, value: webgalStore.getState().userData.globalGameVar[normalizedKey] });
+    logger.debug('设置全局变量：', {
+      key: normalizedKey,
+      value: webgalStore.getState().userData.globalGameVar[normalizedKey],
+    });
     if (persistGlobal) {
       dumpToStorageFast();
     }
   } else {
-    logger.debug('设置变量：', { key: normalizedKey, value: stageStateManager.getCalculationStageState().GameVar[normalizedKey] });
+    logger.debug('设置变量：', {
+      key: normalizedKey,
+      value: stageStateManager.getCalculationStageState().GameVar[normalizedKey],
+    });
   }
 };
 
