@@ -1,7 +1,7 @@
 /**
  * 当前的backlog
  */
-import { IEffect, IStageState } from '@/Core/Modules/stage/stageInterface';
+import { IStageState } from '@/Core/Modules/stage/stageInterface';
 import { ISaveScene } from '@/store/userDataInterface';
 import cloneDeep from 'lodash/cloneDeep';
 
@@ -26,10 +26,6 @@ export class BacklogManager {
 
   public getBacklog() {
     return this.backlog;
-  }
-
-  public editLastBacklogItemEffect(effects: IEffect[]) {
-    this.backlog[this.backlog.length - 1].currentStageState.effects = effects;
   }
 
   public makeBacklogEmpty() {
