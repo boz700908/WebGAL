@@ -1,17 +1,11 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { STAGE_KEYS } from '@/Core/constants';
-import { baseTransform } from '@/Core/Modules/stage/stageInterface';
+import { baseTransform, FIGURE_KEYS } from '@/Core/Modules/stage/stageInterface';
 import type { IStageState, ITransform } from '@/Core/Modules/stage/stageInterface';
 import type { TransformBaselineQueryResultPayload } from '@/types/editorPreviewProtocol';
 import type { FastPreviewResult } from './previewSyncSceneCommand';
 
-const FIXED_TARGETS = new Set<string>([
-  STAGE_KEYS.STAGE_MAIN,
-  STAGE_KEYS.BGMAIN,
-  STAGE_KEYS.FIG_C,
-  STAGE_KEYS.FIG_L,
-  STAGE_KEYS.FIG_R,
-]);
+const FIXED_TARGETS = new Set<string>([STAGE_KEYS.STAGE_MAIN, STAGE_KEYS.BGMAIN, ...FIGURE_KEYS]);
 
 type BaselineRevisionState =
   | {
