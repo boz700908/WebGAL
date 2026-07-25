@@ -11,6 +11,7 @@ import get from 'lodash/get';
 import random from 'lodash/random';
 import { getBooleanArgByKey } from '../util/getSentenceArg';
 import { stageStateManager } from '@/Core/Modules/stage/stageStateManager';
+import { WebGAL } from '@/Core/WebGAL';
 
 interface ISetGameVarFromExpressionPayload {
   key: string;
@@ -18,6 +19,17 @@ interface ISetGameVarFromExpressionPayload {
   isGlobal?: boolean;
   persistGlobal?: boolean;
 }
+
+/**
+ * 写入游戏变量。setVar 与场景返回值共用这一条写入路径。
+ */
+export const setGameVar = (payload: ISetGameVar, isGlobal = false) => {
+  if (isGlobal) {
+    webgalStore.dispatch(setScriptManagedGlobalVar(payload));
+  } else {
+    stageStateManager.setStageVar(payload);
+  }
+};
 
 /**
  * 设置变量表达式。
@@ -28,19 +40,11 @@ export const setGameVarFromExpression = ({
   isGlobal = false,
   persistGlobal = true,
 }: ISetGameVarFromExpressionPayload) => {
-  const setGameVar = (payload: ISetGameVar) => {
-    if (isGlobal) {
-      webgalStore.dispatch(setScriptManagedGlobalVar(payload));
-    } else {
-      stageStateManager.setStageVar(payload);
-    }
-  };
-
   const normalizedKey = key.trim();
   if (!normalizedKey) {
     return;
   }
-  setGameVar({ key: normalizedKey, value: resolveSetVarValue(value) });
+  setGameVar({ key: normalizedKey, value: resolveSetVarValue(value) }, isGlobal);
   if (isGlobal) {
     logger.debug('设置全局变量：', {
       key: normalizedKey,
@@ -131,10 +135,14 @@ function EvaluateExpression(val: string) {
  */
 export function getValueFromState(key: string) {
   let ret: any;
+  const locals = WebGAL.sceneManager.sceneData.currentLocals;
   const stage = stageStateManager.getCalculationStageState();
   const userData = webgalStore.getState().userData;
   const _Merge = { stage, userData }; // 不要直接合并到一起，防止可能的键冲突
-  if (stage.GameVar.hasOwnProperty(key)) {
+  // 查找链：当前帧局部变量 -> 舞台变量 -> 全局变量
+  if (locals.hasOwnProperty(key)) {
+    ret = locals[key];
+  } else if (stage.GameVar.hasOwnProperty(key)) {
     ret = stage.GameVar[key];
   } else if (userData.globalGameVar.hasOwnProperty(key)) {
     ret = userData.globalGameVar[key];
