@@ -5,6 +5,7 @@ import { STAGE_KEYS } from '@/Core/constants';
 import { baseBlinkParam, baseFocusParam } from '@/Core/live2DCore';
 import {
   baseTransform,
+  FIGURE_KEYS,
   IEffect,
   IFigureMetadata,
   IFreeFigure,
@@ -41,6 +42,10 @@ export const initState: IStageState = {
   figName: '',
   figNameLeft: '',
   figNameRight: '',
+  figNameLeft13: '',
+  figNameRight13: '',
+  figNameLeft14: '',
+  figNameRight14: '',
   freeFigure: [],
   figureAssociatedAnimation: [],
   isRead: false,
@@ -143,9 +148,7 @@ export class StageStateManager {
     const activeTargets = [
       STAGE_KEYS.STAGE_MAIN,
       STAGE_KEYS.BGMAIN,
-      STAGE_KEYS.FIG_C,
-      STAGE_KEYS.FIG_L,
-      STAGE_KEYS.FIG_R,
+      ...FIGURE_KEYS,
       ...state.freeFigure.map((figure) => figure.key),
     ];
     if (!activeTargets.includes(target)) return;
