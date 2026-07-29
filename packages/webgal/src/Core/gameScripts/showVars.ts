@@ -30,9 +30,7 @@ export const showVars = (sentence: ISentence): IPerform => {
     duration: endDelay,
     isHoldOn: false,
     startFunction: () => {
-      setTimeout(() => {
-        WebGAL.events.textSettle.emit();
-      }, 0);
+      WebGAL.events.textSettle.emit();
     },
     stopFunction: () => {
       WebGAL.events.textSettle.emit();

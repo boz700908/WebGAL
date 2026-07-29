@@ -10,6 +10,7 @@ import {
 import { figureStateKeyByPosition, IFreeFigure } from '@/Core/Modules/stage/stageInterface';
 import { AnimationFrame, IUserAnimation } from '@/Core/Modules/animations';
 import { generateTransformAnimationObj } from '@/Core/controller/stage/pixi/animations/generateTransformAnimationObj';
+import { generateTimelineObj } from '@/Core/controller/stage/pixi/animations/timeline';
 import { assetSetter, fileType } from '@/Core/util/gameAssetsAccess/assetSetter';
 import { logger } from '@/Core/util/logger';
 import { applyAnimationEndState, getAnimateDuration } from '@/Core/Modules/animationFunctions';
@@ -125,6 +126,8 @@ export function changeFigure(sentence: ISentence): IPerform {
    * 处理 Effects
    */
   if (isUrlChanged) {
+    // 必须先卸载旧的动画演出：它的 stopFunction 会写回终态，晚于清空 effects 会把旧变换复活
+    WebGAL.gameplay.performController.unmountPerform(`animation-${id}`, true);
     stageStateManager.removeEffectByTargetId(id);
     stageStateManager.removeAnimationSettingsByTarget(id);
     const oldStageObject = WebGAL.gameplay.pixiStage?.getStageObjByKey(id);
@@ -193,8 +196,6 @@ export function changeFigure(sentence: ISentence): IPerform {
     if (isUrlChanged) {
       // 当 url 发生变化时，即发生新立绘替换
       // 应当赋予一些参数以默认值，防止从旧立绘的状态获取数据
-      // 并且关闭一些 hold 动画
-      WebGAL.gameplay.performController.unmountPerform(`animation-${key}`, true);
       bounds = bounds ?? [0, 0, 0, 0];
       blink = blink ?? cloneDeep(baseBlinkParam);
       focus = focus ?? cloneDeep(baseFocusParam);
@@ -248,28 +249,39 @@ export function changeFigure(sentence: ISentence): IPerform {
     stageStateManager.setStage(figureStateKeyByPosition[pos], content);
   }
 
+  /**
+   * 入场动画
+   *
+   * 终态在演算期写入 effects，演出只负责视觉过渡，因此不需要任何延迟结算。
+   * 与 setTransform 共用 `animation-${key}` 演出名，同目标的动画冲突由演出去重统一裁决。
+   */
+  const isEntering = isUrlChanged && content !== '';
+  const enterAnimationSetting = isEntering
+    ? stageStateManager.getCalculationStageState().animationSettings.find((setting) => setting.target === key)
+    : undefined;
+  const enterAnimationName = enterAnimationSetting?.enterAnimationName;
+  const enterAnimationTimeline = enterAnimationName
+    ? applyAnimationEndState(
+        enterAnimationName,
+        key,
+        false,
+        !(enterAnimationSetting?.enterAnimationIgnoreDefault ?? false),
+      )
+    : null;
+  const enterAnimationDuration = enterAnimationName ? getAnimateDuration(enterAnimationName) : 0;
+  const enterAnimationKey = `${key}-softin`;
+
   return {
-    performName: `enter-${key}`,
+    performName: isEntering ? `animation-${key}` : `enter-${key}`,
     duration,
     isHoldOn: false,
-    settleStateOnDiscard: () => {
-      if (content === '' || !isUrlChanged) {
-        return;
-      }
-      const animationSetting = stageStateManager
-        .getCalculationStageState()
-        .animationSettings.find((setting) => setting.target === key);
-      if (animationSetting?.enterAnimationName) {
-        applyAnimationEndState(
-          animationSetting.enterAnimationName,
-          key,
-          false,
-          !(animationSetting.enterAnimationIgnoreDefault ?? false),
-        );
-      }
+    startFunction: () => {
+      if (!enterAnimationTimeline || WebGAL.gameplay.skipAnimation) return;
+      const animationObject = generateTimelineObj(enterAnimationTimeline, key, enterAnimationDuration);
+      WebGAL.gameplay.pixiStage?.registerAnimation(animationObject, enterAnimationKey, key);
     },
     stopFunction: () => {
-      WebGAL.gameplay.pixiStage?.stopPresetAnimationOnTarget(key);
+      WebGAL.gameplay.pixiStage?.removeAnimation(enterAnimationKey);
     },
     blockingNext: () => false,
     blockingAuto: () => true,

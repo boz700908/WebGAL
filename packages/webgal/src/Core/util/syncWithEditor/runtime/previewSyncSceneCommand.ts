@@ -130,7 +130,7 @@ export async function runFastPreview(
       return;
     }
 
-    WebGAL.gameplay.performController.discardUncommittedNonHoldPerforms(true);
+    WebGAL.gameplay.performController.discardUncommittedNonHoldPerforms();
     WebGAL.gameplay.performController.clearNonHoldPerformsFromStageState();
     options.onBeforeTargetScriptExecute?.();
     didRunBeforeTargetScriptExecute = true;
@@ -198,7 +198,7 @@ export async function runFastPreview(
   }
 
   if (settleMode === 'immediate') {
-    WebGAL.gameplay.performController.discardUncommittedNonHoldPerforms(true);
+    WebGAL.gameplay.performController.discardUncommittedNonHoldPerforms();
     WebGAL.gameplay.performController.clearNonHoldPerformsFromStageState();
   }
 
