@@ -1,4 +1,5 @@
-import type { IEffect, IStageState, ITransform } from '@/Core/Modules/stage/stageInterface';
+import type { IEffect, IFigurePosition, IStageState, ITransform } from '@/Core/Modules/stage/stageInterface';
+import { FIGURE_KEYS, FIGURE_POSITIONS, figureStateKeyByPosition } from '@/Core/Modules/stage/stageInterface';
 import type { IResolvedStageCommitOptions } from '@/Core/Modules/stage/stageStateManager';
 import { DEFAULT_BG_IN_DURATION, DEFAULT_BG_OUT_DURATION, DEFAULT_FIG_IN_DURATION } from '@/Core/constants';
 import { WebGAL } from '@/Core/WebGAL';
@@ -11,7 +12,7 @@ import { applyTransformToPixiContainer } from '@/Core/controller/stage/pixi/stag
 interface ISyncFigureSlotPayload {
   key: string;
   sourceUrl: string;
-  position: 'left' | 'center' | 'right';
+  position: IFigurePosition;
   skipAnimation: boolean;
 }
 
@@ -93,14 +94,14 @@ function syncBg(stageState: IStageState, skipAnimation: boolean) {
 }
 
 function syncFigures(stageState: IStageState, skipAnimation: boolean) {
-  syncFigureSlot({ key: 'fig-center', sourceUrl: stageState.figName, position: 'center', skipAnimation });
-  syncFigureSlot({ key: 'fig-left', sourceUrl: stageState.figNameLeft, position: 'left', skipAnimation });
-  syncFigureSlot({
-    key: 'fig-right',
-    sourceUrl: stageState.figNameRight,
-    position: 'right',
-    skipAnimation,
-  });
+  for (const position of FIGURE_POSITIONS) {
+    syncFigureSlot({
+      key: `fig-${position}`,
+      sourceUrl: stageState[figureStateKeyByPosition[position]],
+      position,
+      skipAnimation,
+    });
+  }
 
   for (const fig of stageState.freeFigure) {
     syncFigureSlot({ key: fig.key, sourceUrl: fig.name, position: fig.basePosition, skipAnimation });
@@ -110,12 +111,7 @@ function syncFigures(stageState: IStageState, skipAnimation: boolean) {
   if (!currentFigures) return;
   const freeFigureKeys = new Set(stageState.freeFigure.map((fig) => fig.key));
   for (const existFigure of [...currentFigures]) {
-    if (
-      existFigure.key === 'fig-left' ||
-      existFigure.key === 'fig-center' ||
-      existFigure.key === 'fig-right' ||
-      existFigure.key.endsWith('-off')
-    ) {
+    if (FIGURE_KEYS.includes(existFigure.key) || existFigure.key.endsWith('-off')) {
       continue;
     }
     if (!freeFigureKeys.has(existFigure.key)) {
@@ -130,7 +126,8 @@ function syncFigureSlot({ key, sourceUrl, position, skipAnimation }: ISyncFigure
   const softInAniKey = `${key}-softin`;
   const currentFigure = pixiStage.getStageObjByKey(key);
 
-  if (sourceUrl !== '') {
+  // 旧存档中可能没有新增位置的字段，这里同时容错 undefined
+  if (sourceUrl) {
     if (currentFigure?.sourceUrl === sourceUrl) return;
     if (currentFigure) {
       removeFig(currentFigure, softInAniKey, skipAnimation);
@@ -240,7 +237,7 @@ function addBg(key: string, url: string) {
   }
 }
 
-function addFigure(key: string, url: string, position: 'left' | 'center' | 'right') {
+function addFigure(key: string, url: string, position: IFigurePosition) {
   const pixiStage = WebGAL.gameplay.pixiStage;
   if (!pixiStage) return;
   const baseUrl = window.location.origin;

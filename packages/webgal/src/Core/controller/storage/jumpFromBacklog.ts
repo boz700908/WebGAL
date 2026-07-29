@@ -54,6 +54,7 @@ export const jumpFromBacklog = (index: number, refetchScene = true) => {
     });
   WebGAL.sceneManager.sceneData.currentSentenceId = backlogFile.saveScene.currentSentenceId;
   WebGAL.sceneManager.sceneData.sceneStack = cloneDeep(backlogFile.saveScene.sceneStack);
+  WebGAL.sceneManager.sceneData.currentLocals = cloneDeep(backlogFile.saveScene.currentLocals ?? {}); // 旧存档没有此字段
 
   // 强制停止所有演出
   stopAllPerform();

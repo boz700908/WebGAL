@@ -42,6 +42,7 @@ export function loadGameFromStageData(stageData: ISaveData) {
   });
   WebGAL.sceneManager.sceneData.currentSentenceId = loadFile.sceneData.currentSentenceId;
   WebGAL.sceneManager.sceneData.sceneStack = cloneDeep(loadFile.sceneData.sceneStack);
+  WebGAL.sceneManager.sceneData.currentLocals = cloneDeep(loadFile.sceneData.currentLocals ?? {}); // 旧存档没有此字段
 
   // 强制停止所有演出
   stopAllPerform();

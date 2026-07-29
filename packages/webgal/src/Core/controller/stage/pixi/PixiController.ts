@@ -1,4 +1,10 @@
-import { IFigureAssociatedAnimation, IFigureMetadata, ITransform } from '@/Core/Modules/stage/stageInterface';
+import {
+  getFigureBaseX,
+  IFigureAssociatedAnimation,
+  IFigureMetadata,
+  IFigurePosition,
+  ITransform,
+} from '@/Core/Modules/stage/stageInterface';
 import { Live2D } from '@/Core/WebGAL';
 import { baseBlinkParam, baseFocusParam, BlinkParam, FocusParam } from '@/Core/live2DCore';
 import { isIOS } from '@/Core/initializeScript';
@@ -497,7 +503,7 @@ export default class PixiStage {
    * @param url 立绘图片url
    * @param presetPosition
    */
-  public addFigure(key: string, url: string, presetPosition: 'left' | 'center' | 'right' = 'center') {
+  public addFigure(key: string, url: string, presetPosition: IFigurePosition = 'center') {
     const loader = this.assetLoader;
     // 准备用于存放这个立绘的 Container
     const thisFigureContainer = new WebGALPixiContainer();
@@ -557,15 +563,7 @@ export default class PixiStage {
           if (targetHeight < this.stageHeight) {
             thisFigureContainer.setBaseY(this.stageHeight / 2 + (this.stageHeight - targetHeight) / 2);
           }
-          if (presetPosition === 'center') {
-            thisFigureContainer.setBaseX(this.stageWidth / 2);
-          }
-          if (presetPosition === 'left') {
-            thisFigureContainer.setBaseX(targetWidth / 2);
-          }
-          if (presetPosition === 'right') {
-            thisFigureContainer.setBaseX(this.stageWidth - targetWidth / 2);
-          }
+          thisFigureContainer.setBaseX(getFigureBaseX(presetPosition, this.stageWidth, targetWidth));
           thisFigureContainer.pivot.set(0, this.stageHeight / 2);
           thisFigureContainer.addChild(figureSprite);
           this.notifyTargetReferenceBoxChanged(key);
@@ -591,7 +589,7 @@ export default class PixiStage {
    * @param jsonPath
    */
   // eslint-disable-next-line max-params
-  public addLive2dFigure(key: string, jsonPath: string, pos: string) {
+  public addLive2dFigure(key: string, jsonPath: string, pos: IFigurePosition) {
     if (Live2D.isAvailable !== true) return;
     try {
       let stageWidth = this.stageWidth;
@@ -675,13 +673,7 @@ export default class PixiStage {
                 baseY = stageHeight / 2 + (stageHeight - targetHeight) / 2;
               }
               thisFigureContainer.setBaseY(baseY);
-              if (pos === 'center') {
-                thisFigureContainer.setBaseX(stageWidth / 2);
-              } else if (pos === 'left') {
-                thisFigureContainer.setBaseX(targetWidth / 2);
-              } else if (pos === 'right') {
-                thisFigureContainer.setBaseX(stageWidth - targetWidth / 2);
-              }
+              thisFigureContainer.setBaseX(getFigureBaseX(pos, stageWidth, targetWidth));
 
               thisFigureContainer.pivot.set(0, stageHeight / 2);
 
