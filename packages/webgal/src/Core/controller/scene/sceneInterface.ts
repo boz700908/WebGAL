@@ -3,6 +3,7 @@
  */
 import { fileType } from '@/Core/util/gameAssetsAccess/assetSetter';
 import { ISceneEntry } from '@/Core/Modules/scene';
+import { IGameVar } from '@/Core/Modules/stage/stageInterface';
 
 export enum commandType {
   say, // 对话
@@ -40,6 +41,7 @@ export enum commandType {
   applyStyle,
   wait,
   callSteam, // 调用Steam功能
+  return, // 从被调用的场景返回
 }
 
 /**
@@ -96,6 +98,7 @@ export interface ISceneData {
   currentSentenceId: number; // 当前语句ID
   sceneStack: Array<ISceneEntry>; // 场景栈
   currentScene: IScene; // 当前场景数据
+  currentLocals: IGameVar; // 当前帧的局部变量
 }
 
 /**
