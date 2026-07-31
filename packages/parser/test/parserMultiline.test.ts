@@ -187,3 +187,17 @@ test("parser-multiline-preserves-line-count", async () => {
 
     expect(sentenceList.length).toBe(sceneText.split('\n').length);
 });
+
+/**
+ * 折叠序列的首行是空行时，曾经整条序列会被丢掉，导致预处理后行数变少、
+ * 「语句 index == 文件行号」失效，进而让存档错位。
+ */
+test("parser-multiline-empty-first-line-keeps-line-count", async () => {
+    const testScene = `A;
+
+  -next
+B;`;
+
+    expect(sceneTextPreProcess(testScene).split('\n')).toHaveLength(4);
+    expect(parser.parse(testScene, 'test', 'test').sentenceList).toHaveLength(4);
+});

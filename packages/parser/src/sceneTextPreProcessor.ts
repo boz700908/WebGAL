@@ -94,7 +94,10 @@ function isEmptyLine(line: string): boolean {
  */
 function sceneTextPreProcessPassTwo(lines: string[]): string[] {
   const processedLines: string[] = [];
-  let currentMultilineContent = "";
+  // null 表示当前不在多行序列里。这里不能用空串来判断：
+  // 序列的首行本身可能就是空行（比如空行后面紧跟着一条续行），
+  // 那样整条序列会被静默丢弃，破坏「预处理前后行数一致」这个前提。
+  let currentMultilineContent: string | null = null;
   let placeHolderLines: string[] = [];
 
   function concat(line: string) {
@@ -106,11 +109,18 @@ function sceneTextPreProcessPassTwo(lines: string[]): string[] {
     placeHolderLines.push(placeholderLine(line));
   }
 
+  /** 把折叠好的整条语句连同补齐行数的占位行一起输出 */
+  function flushMultiline() {
+    processedLines.push(currentMultilineContent as string, ...placeHolderLines);
+    placeHolderLines = [];
+    currentMultilineContent = null;
+  }
+
   for (const line of lines) {
     if (line.endsWith('\\')) {
       const trueLine = line.slice(0, -1);
 
-      if (currentMultilineContent === "") {
+      if (currentMultilineContent === null) {
         // first line
         currentMultilineContent = trueLine;
       } else {
@@ -120,14 +130,10 @@ function sceneTextPreProcessPassTwo(lines: string[]): string[] {
       continue;
     }
 
-    if (currentMultilineContent !== "") {
+    if (currentMultilineContent !== null) {
       // end line
       concat(line);
-      processedLines.push(currentMultilineContent);
-      processedLines.push(...placeHolderLines);
-
-      placeHolderLines = [];
-      currentMultilineContent = "";
+      flushMultiline();
       continue;
     }
 
@@ -135,8 +141,8 @@ function sceneTextPreProcessPassTwo(lines: string[]): string[] {
   }
 
   // 场景末行仍以 \ 结尾时循环里没有机会收尾，在这里把累积的内容补出去。
-  if (currentMultilineContent !== "") {
-    processedLines.push(currentMultilineContent, ...placeHolderLines);
+  if (currentMultilineContent !== null) {
+    flushMultiline();
   }
 
   return processedLines;
