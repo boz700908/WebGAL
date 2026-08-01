@@ -76,6 +76,8 @@ export interface ISentence {
   sentenceAssets: Array<IAsset>; // 语句携带的资源列表
   subScene: Array<string>; // 语句包含子场景列表
   inlineComment: string; // 行内注释
+  /** 本条是多行语句被折叠掉的续行占位，仅用于补齐行数，不是一条可停靠的语句 */
+  isLineBreakHolder: boolean;
 }
 
 /**

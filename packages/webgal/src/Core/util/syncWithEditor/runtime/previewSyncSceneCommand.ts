@@ -7,6 +7,7 @@ import { commitForward, forward } from '@/Core/controller/gamePlay/nextSentence'
 import { stopFast } from '@/Core/controller/gamePlay/fastSkip';
 import { sceneParser } from '@/Core/parser/sceneParser';
 import { logger } from '@/Core/util/logger';
+import { ISentence } from '@/Core/controller/scene/sceneInterface';
 import { assetSetter, fileType } from '@/Core/util/gameAssetsAccess/assetSetter';
 import type { FastPreviewTimeoutPayload, SyncScenePayload, SyncSceneSettleMode } from '@/types/editorPreviewProtocol';
 import { applyPreviewDebugVariables } from './previewDebugVariables';
@@ -108,6 +109,7 @@ export async function runFastPreview(
   options: RunFastPreviewOptions = {},
 ): Promise<FastPreviewResult | null> {
   const isLatest = () => options.isLatest?.() ?? true;
+  const targetSentenceId = resolveStopSentenceId(sentenceId);
   const fastPreviewStartTime = performance.now();
   const baseSceneStackDepth = WebGAL.sceneManager.sceneData.sceneStack.length;
   stopFast();
@@ -125,7 +127,7 @@ export async function runFastPreview(
       !options.onBeforeTargetScriptExecute ||
       didRunBeforeTargetScriptExecute ||
       sceneName !== currentSceneName ||
-      nextSentenceId !== sentenceId - 1
+      nextSentenceId !== targetSentenceId - 1
     ) {
       return;
     }
@@ -137,7 +139,7 @@ export async function runFastPreview(
   };
 
   try {
-    while (shouldContinueFastPreview(sentenceId, currentSceneName, baseSceneStackDepth)) {
+    while (shouldContinueFastPreview(targetSentenceId, currentSceneName, baseSceneStackDepth)) {
       if (!isLatest()) {
         return null;
       }
@@ -210,15 +212,15 @@ export async function runFastPreview(
 
   const forwardedLineCount =
     WebGAL.sceneManager.sceneData.currentScene.sceneName === currentSceneName
-      ? Math.min(WebGAL.sceneManager.sceneData.currentSentenceId, sentenceId)
-      : sentenceId;
+      ? Math.min(WebGAL.sceneManager.sceneData.currentSentenceId, targetSentenceId)
+      : targetSentenceId;
   const fastPreviewElapsedMs = Math.round(performance.now() - fastPreviewStartTime - suspendedElapsedMs);
 
   if (isTimedOut) {
     const payload: FastPreviewTimeoutPayload = {
       sceneName: WebGAL.sceneManager.sceneData.currentScene.sceneName,
       sentenceId: WebGAL.sceneManager.sceneData.currentSentenceId,
-      targetSentenceId: sentenceId,
+      targetSentenceId,
       forwardedLineCount,
       elapsedMs: Math.max(timeoutElapsedMs, fastPreviewElapsedMs),
       maxDurationMs: FAST_PREVIEW_MAX_DURATION_MS,
@@ -236,6 +238,23 @@ export async function runFastPreview(
     isTimedOut,
     stopReason,
   };
+}
+
+/**
+ * 把停止指针从多行语句的续行占位上回退到该语句首行之后。
+ *
+ * 续行占位是带 -next 的注释，一次 forward 会沿着 -next 一路穿过它们，
+ * 顺带把下一条真实语句也执行掉。而编辑器不论把指针落在续行的哪一行，
+ * 想要的都是「执行完这条多行语句就停下」，即停在它首行之后。
+ */
+function resolveStopSentenceId(sentenceId: number): number {
+  const sentenceList: ISentence[] = WebGAL.sceneManager.sceneData.currentScene.sentenceList;
+  let stopSentenceId = sentenceId;
+  while (stopSentenceId > 0 && sentenceList[stopSentenceId - 1]?.isLineBreakHolder) {
+    stopSentenceId--;
+  }
+
+  return stopSentenceId;
 }
 
 function shouldContinueFastPreview(sentenceId: number, currentSceneName: string, baseSceneStackDepth: number): boolean {
