@@ -1,5 +1,14 @@
 # WebGAL Parser Changelog
 
+## [4.6.3] - 2026-08-01
+
+正式发布 4.6.3-beta.1 / beta.2 的多行语句支持，另含以下改动。
+
+### Added
+- 新增 `return` 命令，用于从被 `callScene` 调用的场景提前返回
+- `sceneEntry` 新增 `locals` / `writeReturnTo`，承载 `callScene` 传入的局部变量与返回值写回目标
+- 语音参数识别 `.opus` 扩展名
+
 ## [4.6.3-beta.2] - 2026-07-31
 
 ### Fixed
