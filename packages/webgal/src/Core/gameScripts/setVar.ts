@@ -13,22 +13,45 @@ import { getBooleanArgByKey } from '../util/getSentenceArg';
 import { stageStateManager } from '@/Core/Modules/stage/stageStateManager';
 import { WebGAL } from '@/Core/WebGAL';
 
+/**
+ * 变量的作用域，与查找链一一对应。
+ * local 是当前调用帧的局部变量，与 callScene 传入的参数同处一个命名空间，帧结束即消失。
+ */
+export type VarScope = 'local' | 'stage' | 'global';
+
 interface ISetGameVarFromExpressionPayload {
   key: string;
   value: string;
-  isGlobal?: boolean;
+  scope?: VarScope;
   persistGlobal?: boolean;
 }
 
 /**
  * 写入游戏变量。setVar 与场景返回值共用这一条写入路径。
  */
-export const setGameVar = (payload: ISetGameVar, isGlobal = false) => {
-  if (isGlobal) {
+export const setGameVar = (payload: ISetGameVar, scope: VarScope = 'stage') => {
+  if (scope === 'global') {
     webgalStore.dispatch(setScriptManagedGlobalVar(payload));
+  } else if (scope === 'local') {
+    WebGAL.sceneManager.sceneData.currentLocals[payload.key] = payload.value;
   } else {
     stageStateManager.setStageVar(payload);
   }
+};
+
+/**
+ * 从参数解析写入作用域。-global 与 -local 互斥，都写时以 -global 为准。
+ */
+const resolveVarScope = (sentence: ISentence): VarScope => {
+  const isGlobal = getBooleanArgByKey(sentence, 'global') ?? false;
+  const isLocal = getBooleanArgByKey(sentence, 'local') ?? false;
+  if (isGlobal) {
+    if (isLocal) {
+      logger.warn('setVar 同时使用了 -global 和 -local，按 -global 处理', sentence.content);
+    }
+    return 'global';
+  }
+  return isLocal ? 'local' : 'stage';
 };
 
 /**
@@ -37,15 +60,15 @@ export const setGameVar = (payload: ISetGameVar, isGlobal = false) => {
 export const setGameVarFromExpression = ({
   key,
   value,
-  isGlobal = false,
+  scope = 'stage',
   persistGlobal = true,
 }: ISetGameVarFromExpressionPayload) => {
   const normalizedKey = key.trim();
   if (!normalizedKey) {
     return;
   }
-  setGameVar({ key: normalizedKey, value: resolveSetVarValue(value) }, isGlobal);
-  if (isGlobal) {
+  setGameVar({ key: normalizedKey, value: resolveSetVarValue(value) }, scope);
+  if (scope === 'global') {
     logger.debug('设置全局变量：', {
       key: normalizedKey,
       value: webgalStore.getState().userData.globalGameVar[normalizedKey],
@@ -53,6 +76,11 @@ export const setGameVarFromExpression = ({
     if (persistGlobal) {
       dumpToStorageFast();
     }
+  } else if (scope === 'local') {
+    logger.debug('设置局部变量：', {
+      key: normalizedKey,
+      value: WebGAL.sceneManager.sceneData.currentLocals[normalizedKey],
+    });
   } else {
     logger.debug('设置变量：', {
       key: normalizedKey,
@@ -66,11 +94,11 @@ export const setGameVarFromExpression = ({
  * @param sentence
  */
 export const setVar = (sentence: ISentence): IPerform => {
-  const setGlobal = getBooleanArgByKey(sentence, 'global') ?? false;
+  const scope = resolveVarScope(sentence);
   if (sentence.content.match(/\s*=\s*/)) {
     const key = sentence.content.split(/\s*=\s*/)[0];
     const valExp = sentence.content.split(/\s*=\s*/)[1];
-    setGameVarFromExpression({ key, value: valExp, isGlobal: setGlobal });
+    setGameVarFromExpression({ key, value: valExp, scope });
   }
   return createNonePerform();
 };
